@@ -2,9 +2,12 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Linq;
 using Microsoft.AspNet.Testing;
 using Microsoft.Framework.DependencyInjection.Tests.Fakes;
 using Xunit;
+
+using AbstractionResources = Microsoft.Framework.DependencyInjection.Abstractions.Resources;
 
 namespace Microsoft.Framework.DependencyInjection
 {
@@ -63,21 +66,21 @@ namespace Microsoft.Framework.DependencyInjection
             get
             {
                 var serviceType = typeof(IFakeService);
-                var objectType = typeof(object);
                 var implementationType = typeof(FakeService);
+                var objectType = typeof(object);
 
                 return new TheoryData<Action<IServiceCollection>, Type, Type, ServiceLifetime>
                 {
                     { collection => collection.AddTransient(serviceType, s => new FakeService()),serviceType, objectType, ServiceLifetime.Transient },
-                    { collection => collection.AddTransient<IFakeService>(s => new FakeService()),serviceType, serviceType, ServiceLifetime.Transient },                    
+                    { collection => collection.AddTransient<IFakeService>(s => new FakeService()),serviceType, serviceType, ServiceLifetime.Transient },
                     { collection => collection.AddTransient<IFakeService, FakeService>(s => new FakeService()),serviceType, implementationType, ServiceLifetime.Transient },
 
                     { collection => collection.AddScoped(serviceType, s => new FakeService()),serviceType, objectType, ServiceLifetime.Scoped },
-                    { collection => collection.AddScoped<IFakeService>(s => new FakeService()),serviceType, serviceType, ServiceLifetime.Scoped },                    
+                    { collection => collection.AddScoped<IFakeService>(s => new FakeService()),serviceType, serviceType, ServiceLifetime.Scoped },
                     { collection => collection.AddScoped<IFakeService, FakeService>(s => new FakeService()),serviceType, implementationType, ServiceLifetime.Scoped },
 
                     { collection => collection.AddSingleton(serviceType, s => new FakeService()),serviceType, objectType, ServiceLifetime.Singleton },
-                    { collection => collection.AddSingleton<IFakeService>(s => new FakeService()),serviceType, serviceType, ServiceLifetime.Singleton },                    
+                    { collection => collection.AddSingleton<IFakeService>(s => new FakeService()),serviceType, serviceType, ServiceLifetime.Singleton },
                     { collection => collection.AddSingleton<IFakeService, FakeService>(s => new FakeService()),serviceType, implementationType, ServiceLifetime.Singleton },
                 };
             }
@@ -292,15 +295,12 @@ namespace Microsoft.Framework.DependencyInjection
                 return new TheoryData<ServiceDescriptor, Type, Type, ServiceLifetime>
                 {
                     { ServiceDescriptor.Transient<IFakeService, FakeService>(), serviceType, implementationType, ServiceLifetime.Transient },
-                    { ServiceDescriptor.Transient<IFakeService>(s => new FakeService()), serviceType, serviceType, ServiceLifetime.Transient },
                     { ServiceDescriptor.Transient<IFakeService, FakeService>(s => new FakeService()), serviceType, implementationType, ServiceLifetime.Transient },
 
                     { ServiceDescriptor.Scoped<IFakeService, FakeService>(), serviceType, implementationType, ServiceLifetime.Scoped },
-                    { ServiceDescriptor.Scoped<IFakeService>(s => new FakeService()), serviceType, serviceType, ServiceLifetime.Scoped },
                     { ServiceDescriptor.Scoped<IFakeService, FakeService>(s => new FakeService()), serviceType, implementationType, ServiceLifetime.Scoped },
 
                     { ServiceDescriptor.Singleton<IFakeService, FakeService>(), serviceType, implementationType, ServiceLifetime.Singleton },
-                    { ServiceDescriptor.Singleton<IFakeService>(s => new FakeService()), serviceType, serviceType, ServiceLifetime.Singleton },
                     { ServiceDescriptor.Singleton<IFakeService,FakeService >(s => new FakeService()), serviceType, implementationType, ServiceLifetime.Singleton },
 
                     { ServiceDescriptor.Instance<IFakeService>(_instance), serviceType, implementationType, ServiceLifetime.Singleton },
@@ -395,6 +395,63 @@ namespace Microsoft.Framework.DependencyInjection
             Assert.Equal(typeof(IFakeService), descriptor.ServiceType);
             Assert.Null(descriptor.ImplementationInstance);
             Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
+        }
+
+        public static TheoryData TryAddEnumerableInvalidImplementationTypeData
+        {
+            get
+            {
+                var serviceType = typeof(IFakeService);
+                var implementationType = typeof(FakeService);
+                var objectType = typeof(object);
+
+                return new TheoryData<ServiceDescriptor, Type, Type>
+                {
+                    { ServiceDescriptor.Transient<IFakeService>(s => new FakeService()), serviceType, serviceType },
+                    { ServiceDescriptor.Transient(serviceType, s => new FakeService()), serviceType, objectType },
+
+                    { ServiceDescriptor.Scoped<IFakeService>(s => new FakeService()), serviceType, serviceType },
+                    { ServiceDescriptor.Scoped(serviceType, s => new FakeService()), serviceType, objectType },
+
+                    { ServiceDescriptor.Singleton<IFakeService>(s => new FakeService()), serviceType, serviceType },
+                    { ServiceDescriptor.Singleton(serviceType, s => new FakeService()), serviceType, objectType },
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TryAddEnumerableInvalidImplementationTypeData))]
+        public void TryAddEnumerable_ThrowsWhenAddingIndistinguishableImplementationType(
+            ServiceDescriptor descriptor,
+            Type serviceType,
+            Type implementationType)
+        {
+            // Arrange
+            var collection = new ServiceCollection();
+
+            // Act & Assert
+            ExceptionAssert.ThrowsArgument(
+                () => collection.TryAddEnumerable(descriptor),
+                "descriptor",
+                AbstractionResources.FormatTryAddIndistinguishableTypeToEnumerable(implementationType, serviceType));
+        }
+
+        [Theory]
+        [MemberData(nameof(TryAddEnumerableInvalidImplementationTypeData))]
+        public void TryAddEnumerable_ThrowsWhenAddingToEnumerableWithIndistinguishableImplementationType(
+            ServiceDescriptor descriptor,
+            Type serviceType,
+            Type implementationType)
+        {
+            // Arrange
+            var collection = new ServiceCollection().Add(descriptor);
+            var descriptor1 = new ServiceDescriptor(serviceType, typeof(FakeService));
+
+            // Act & Assert
+            ExceptionAssert.ThrowsArgument(
+                () => collection.TryAddEnumerable(descriptor1),
+                "services",
+                AbstractionResources.FormatTryAddToEnumerableWithIndistinguishableType(implementationType, serviceType));
         }
 
         [Fact]

@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using Microsoft.Framework.DependencyInjection.Abstractions;
 using Microsoft.Framework.Internal;
 
 namespace Microsoft.Framework.DependencyInjection
@@ -72,7 +73,7 @@ namespace Microsoft.Framework.DependencyInjection
         /// <inheritdoc />
         public Func<IServiceProvider, object> ImplementationFactory { get; }
 
-        public Type GetImplementationType()
+        internal Type GetImplementationType()
         {
             if (ImplementationType != null)
             {
@@ -84,10 +85,14 @@ namespace Microsoft.Framework.DependencyInjection
             }
             else if (ImplementationFactory != null)
             {
-                return ImplementationFactory.GetType().GenericTypeArguments[1];
+                var typeArguments = ImplementationFactory.GetType().GenericTypeArguments;
+
+                Debug.Assert(typeArguments.Length == 2);
+
+                return typeArguments[1];
             }
 
-            return null;
+            throw new ArgumentException(Resources.FormatNoImplementation(ServiceType));
         }
 
         public static ServiceDescriptor Transient<TService, TImplementation>()

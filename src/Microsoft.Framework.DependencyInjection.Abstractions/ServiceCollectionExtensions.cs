@@ -187,8 +187,8 @@ namespace Microsoft.Framework.DependencyInjection
 
         /// <summary>
         /// Adds a <see cref="ServiceDescriptor"/> if an existing descriptor with the same
-        /// <see cref="ServiceDescriptor.ServiceType"/> and <see cref="ServiceDescriptor.GetImplementationType"/>
-        /// value does not already exist in <paramref name="services."/>.
+        /// <see cref="ServiceDescriptor.ServiceType"/> and an implementation that does not already exist
+        /// in <paramref name="services."/>.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="descriptor">The <see cref="ServiceDescriptor"/>.</param>
@@ -208,13 +208,33 @@ namespace Microsoft.Framework.DependencyInjection
             [NotNull] this IServiceCollection services,
             [NotNull] ServiceDescriptor descriptor)
         {
-            var implementationType = descriptor.GetImplementationType();
+            var serviceType = descriptor.ServiceType;
+            var descriptorImplementationType = descriptor.GetImplementationType();
 
-            if (services.Any(d =>
-                d.ServiceType == descriptor.ServiceType &&
-                d.GetImplementationType() == implementationType))
+            if (descriptorImplementationType == typeof(object)
+                || descriptorImplementationType == serviceType)
             {
-                return false;
+                throw new ArgumentException(
+                    Resources.FormatTryAddIndistinguishableTypeToEnumerable(descriptorImplementationType, serviceType),
+                    nameof(descriptor));
+            }
+
+            foreach(var service in services.Where(s => s.ServiceType == serviceType))
+            {
+                var serviceImplementationType = service.GetImplementationType();
+
+                if (serviceImplementationType == typeof(object)
+                    || serviceImplementationType == serviceType)
+                {
+                    throw new ArgumentException(
+                        Resources.FormatTryAddToEnumerableWithIndistinguishableType(serviceImplementationType, serviceType),
+                        nameof(services));
+                }
+
+                if(serviceImplementationType == descriptorImplementationType)
+                {
+                    return false;
+                }
             }
 
             services.Add(descriptor);
@@ -223,8 +243,8 @@ namespace Microsoft.Framework.DependencyInjection
 
         /// <summary>
         /// Adds the specified <see cref="ServiceDescriptor"/>s if an existing descriptor with the same
-        /// <see cref="ServiceDescriptor.ServiceType"/> and <see cref="ServiceDescriptor.GetImplementationType"/>
-        /// value does not already exist in <paramref name="services."/>.
+        /// <see cref="ServiceDescriptor.ServiceType"/> and an implementation that does not already exist
+        /// in <paramref name="services."/>.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/>.</param>
         /// <param name="descriptor">The <see cref="ServiceDescriptor"/>s.</param>

@@ -91,19 +91,51 @@ namespace Microsoft.Framework.DependencyInjection.Abstractions
         }
 
         /// <summary>
-        /// The {0} must have the {1} property set to a non-null value.
+        /// Unable to add service to Enumerable because the implementation type '{0}' is indistinguishable from the service type '{1}'.
         /// </summary>
-        internal static string TryAddEnumerable_ImplementationTypeMustBeSet
+        internal static string TryAddIndistinguishableTypeToEnumerable
         {
-            get { return GetString("TryAddEnumerable_ImplementationTypeMustBeSet"); }
+            get { return GetString("TryAddIndistinguishableTypeToEnumerable"); }
         }
 
         /// <summary>
-        /// The {0} must have the {1} property set to a non-null value.
+        /// Unable to add service to Enumerable because the implementation type '{0}' is indistinguishable from the service type '{1}'.
         /// </summary>
-        internal static string FormatTryAddEnumerable_ImplementationTypeMustBeSet(object p0, object p1)
+        internal static string FormatTryAddIndistinguishableTypeToEnumerable(object p0, object p1)
         {
-            return string.Format(CultureInfo.CurrentCulture, GetString("TryAddEnumerable_ImplementationTypeMustBeSet"), p0, p1);
+            return string.Format(CultureInfo.CurrentCulture, GetString("TryAddIndistinguishableTypeToEnumerable"), p0, p1);
+        }
+
+        /// <summary>
+        /// Unable to add service to Enumerable because the collection contains an implementation type '{0}' that is indistinguishable from the service type '{1}'.
+        /// </summary>
+        internal static string TryAddToEnumerableWithIndistinguishableType
+        {
+            get { return GetString("TryAddToEnumerableWithIndistinguishableType"); }
+        }
+
+        /// <summary>
+        /// Unable to add service to Enumerable because the collection contains an implementation type '{0}' that is indistinguishable from the service type '{1}'.
+        /// </summary>
+        internal static string FormatTryAddToEnumerableWithIndistinguishableType(object p0, object p1)
+        {
+            return string.Format(CultureInfo.CurrentCulture, GetString("TryAddToEnumerableWithIndistinguishableType"), p0, p1);
+        }
+
+        /// <summary>
+        /// Service type '{0}' has been registered without an implementation type.
+        /// </summary>
+        internal static string NoImplementation
+        {
+            get { return GetString("NoImplementation"); }
+        }
+
+        /// <summary>
+        /// Service type '{0}' has been registered without an implementation type.
+        /// </summary>
+        internal static string FormatNoImplementation(object p0)
+        {
+            return string.Format(CultureInfo.CurrentCulture, GetString("NoImplementation"), p0);
         }
 
         private static string GetString(string name, params string[] formatterNames)
